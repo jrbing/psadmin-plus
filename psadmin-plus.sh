@@ -172,6 +172,7 @@ function action_menu_call
 		# loop type
 		printf "\n========== cfg: $cfg ============\n"
 		(
+#TODO - can't use for loop with associative array?
     	for ((j=0; j<${#types[*]}; j++));
 		do
 			type=${types[j]}
@@ -224,8 +225,8 @@ function main_menu
 	case $option in
 		s ) select_menu;;
 		q ) clear; exit ;;
-		* ) cfgs=(${cfghomes[$((option-1))]}); types=('web' 'app' 'prcs'); action_menu;;
-	esac	
+		* ) cfgs=(${cfghomes[$((option-1))]}); types[web]="web";types[app]="app";types[prcs]="prcs"; action_menu;;
+	esac
 	done
 }
 
@@ -252,19 +253,31 @@ function select_menu
 	echo ""
 	case $option in
 		1 ) selectdoms_menu;;
-        2 ) get_cfgs_web; get_cfgs_app; get_cfgs_prcs; types=('web' 'app' 'prcs'); action_menu;;
-		3 ) get_cfgs_web; types=('web'); action_menu;;
-		4 ) get_cfgs_app; types=('app'); action_menu;;
-		5 ) get_cfgs_prcs; types=('prcs'); action_menu;;
+        	2 ) get_cfgs_web; get_cfgs_app; get_cfgs_prcs; types[web]="web";types[app]="app";types[prcs]="prcs"; action_menu;;
+		3 ) get_cfgs_web; types[web]="web"; action_menu;;
+		4 ) get_cfgs_app; types[app]="app"; action_menu;;
+		5 ) get_cfgs_prcs; types[prcs]="prcs"; action_menu;;
 		q ) clear; main_menu ;;
 		* ) echo "ya messed up, yo";;
 	esac
 	done
 }
 
+function toggle_type
+{
+	toggle=($1)
+	check=( "${types[@]/$toggle}" )
+	
+	if [ "$types" == "$check" ] 
+	then	
+		types+=($1)
+	fi
+}
+
+
+
 function selectdoms_menu
 {
-	#TODO	
     # select cfg
     option=""
     cfgs=()
@@ -307,15 +320,16 @@ function selectdoms_menu
         read option
         echo " "
         case $option in
-            1 ) types+=("web");;
-            2 ) types+=("app");;
-            3 ) types+=("prcs");;
+            1 ) types[web]="web";;
+            2 ) types[app]="app";;
+            3 ) types[prcs]="prcs";;
             d ) action_menu;;
             q ) clear; select_menu;;
             * ) ;;
         esac
+	#TODO dup check not needed anymore
     	types=($(printf "%s\n" "${types[@]}" | sort -u))
-    done
+   done
 }
 
 function action_menu
@@ -325,18 +339,19 @@ function action_menu
     until [ "$option" = "q" ]; do
 	print_header
 
-	echo " 1 - Status     6 - Bounce    "
-	echo " 2 - Start      7 - Kill      "
-	echo " 3 - Stop       8 - Configure "
-	echo " 4 - Restart    9 - Flush     "
-	echo " 5 - Purge"
-	echo "   - "
+	echo " 1 - Status         6 - Bounce    "
+	echo " 2 - Start          7 - Kill      "
+	echo " 3 - Stop           8 - Configure "
+	echo " 4 - Restart        9 - Flush     "
+	echo " 5 - Purge                        "
+	echo "                                  "
 	# not multi select?
 	if [ ${#cfgs[@]} -eq 1 ]; then
-		echo " s - summary"
-		echo " p - psadmin"
-		echo " e - edit psconfig.sh"
-		echo " h - help"
+		echo " p - psadmin       tw - toggle web    "
+		echo " s - summary       ta - toogle app    "
+		echo " e - edit config   tp - toogle prcs   "
+		echo "                                      "
+		echo " h - help                             "
 	fi
 	echo " q - Quit"
 	echo -e "\n"
@@ -357,6 +372,9 @@ function action_menu
 		s ) call_summary;;
 		p ) call_psadmin;;
 		e ) edit_psconfig;;
+		tw) toggle_type "web";;
+		ta) toggle_type "app";;
+		tp) toggle_type "prcs";;
 		h ) print_help;;
 		q ) clear; main_menu ;;
 		* ) echo "ya messed up, yo";;
@@ -396,7 +414,7 @@ function print_help
 function print_menu_item
 {
 	item=$1
-    cfg=$2
+    	cfg=$2
 	
 	echo -n " $item - $cfg [" 
 	check_web $cfg 
